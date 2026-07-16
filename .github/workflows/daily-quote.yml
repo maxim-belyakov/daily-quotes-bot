@@ -1,0 +1,32 @@
+name: Daily quote
+
+on:
+  schedule:
+    # 08:00 UTC = 10:00 in Warsaw during summer (CEST, UTC+2),
+    # 09:00 in winter (CET, UTC+1). GitHub cron is best-effort and may
+    # run a few minutes late, especially at the top of the hour.
+    - cron: "0 8 * * *"
+  workflow_dispatch: {}  # lets you trigger a run manually from the Actions tab
+
+# Avoid overlapping runs if a scheduled and a manual run coincide.
+concurrency:
+  group: daily-quote
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Send quote of the day
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python send_quote.py
