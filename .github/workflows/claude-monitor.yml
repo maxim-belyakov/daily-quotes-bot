@@ -1,0 +1,39 @@
+name: Claude monitor
+
+on:
+  schedule:
+    # Check Claude every 5 minutes.
+    - cron: "*/5 * * * *"
+
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check Claude status
+        id: claude
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python check_claude.py
+
+      - name: Disable monitor when Claude is operational
+        if: steps.claude.outputs.operational == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow disable claude-monitor.yml
